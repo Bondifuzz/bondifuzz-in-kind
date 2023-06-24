@@ -159,7 +159,7 @@ docker-compose build
 docker-compose -p bondifuzz up -d
 ```
 
-Now host at `http://kind.corp.bondifuzz.com:8080` must be available
+Now host at `http://localhost:8080` must be available
 
 ## Install CLI
 
