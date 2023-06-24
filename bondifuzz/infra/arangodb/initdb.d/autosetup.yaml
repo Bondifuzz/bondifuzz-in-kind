@@ -1,0 +1,54 @@
+users:
+  - username: crash-analyzer
+    password: crash-analyzer
+  - username: api-gateway
+    password: api-gateway
+  - username: scheduler
+    password: scheduler
+  - username: starter
+    password: starter
+  - username: pool-manager
+    password: pool-manager
+databases:
+  - name: ApiGateway
+    collections: []
+  - name: CrashAnalyzer
+    collections: []
+  - name: Scheduler
+    collections: []
+  - name: Starter
+    collections: []
+  - name: PoolManager
+    collections: []
+grants:
+  - username: crash-analyzer
+    database: CrashAnalyzer
+    permissions: rw
+  - username: api-gateway
+    database: ApiGateway
+    permissions: rw
+  - username: scheduler
+    database: Scheduler
+    permissions: rw
+  - username: starter
+    database: Starter
+    permissions: rw
+  - username: pool-manager
+    database: PoolManager
+    permissions: rw
+
+# users:
+# - username: bob
+#   password: bob
+# databases:
+# - name: FuzzFarm
+#   collections:
+#   - name: Users
+#     type: document
+#     indexes:
+#     - fields:
+#       - username
+#       name: find_user_by_id
+#       type: persistent
+#       sparse: false
+#       unique: false

@@ -1,0 +1,88 @@
+arangodb:
+  database: ApiGateway
+  collections:
+    langs: Langs
+    engines: Engines
+    images: Images
+langs: # Programming langages, supported by BondiFuzz
+  - id: go
+    display_name: Go
+  - id: cpp
+    display_name: C++
+  - id: rust
+    display_name: Rust
+  - id: swift
+    display_name: Swift
+  - id: python
+    display_name: Python
+  - id: java
+    display_name: Java (JVM)
+engines: # Fuzzing engines supported, by BondiFuzz
+  - id: libfuzzer
+    display_name: LibFuzzer
+    langs:
+      - cpp
+      - swift
+  - id: jazzer
+    display_name: Jazzer
+    langs:
+      - java
+  - id: atheris
+    display_name: Atheris
+    langs:
+      - python
+  - id: cargo-fuzz
+    display_name: Cargo-fuzz
+    langs:
+      - rust
+  - id: go-fuzz-libfuzzer
+    display_name: Go-fuzz (LibFuzzer)
+    langs:
+      - go
+  - id: afl
+    display_name: AFL++
+    langs:
+      - cpp
+  - id: afl.rs
+    display_name: AFL.rs
+    langs:
+      - rust
+images: # Images with fuzzing runtime environment
+  - id: ubuntu-18.04
+    name: Ubuntu 18.04
+    status: Ready
+    description: >-
+      Ubuntu 18.04 with afl++ 4.05c, Python 3.6.9, openjdk 11.0.17, Jazzer 0.13.2
+    engines:
+      - libfuzzer
+      - jazzer
+      - cargo-fuzz
+      - go-fuzz-libfuzzer
+      - afl
+      - afl.rs
+  - id: ubuntu-20.04
+    name: Ubuntu 20.04
+    status: Ready
+    description: >-
+      Ubuntu 20.04 with afl++ 4.05c, Python 3.8.10, atheris 2.2.2, openjdk 11.0.17, Jazzer 0.13.2
+    engines:
+      - libfuzzer
+      - jazzer
+      - atheris
+      - cargo-fuzz
+      - go-fuzz-libfuzzer
+      - afl
+      - afl.rs
+  - id: ubuntu-22.04
+    name: Ubuntu 22.04
+    status: Ready
+    description: >-
+      Ubuntu 22.04 with afl++ 4.05c, Python 3.10.6, atheris 2.2.2, openjdk 11.0.17, Jazzer 0.13.2
+    engines:
+      - libfuzzer
+      - jazzer
+      - atheris
+      - cargo-fuzz
+      - go-fuzz-libfuzzer
+      - afl
+      - afl.rs

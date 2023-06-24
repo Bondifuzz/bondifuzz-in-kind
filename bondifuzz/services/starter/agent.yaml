@@ -1,0 +1,185 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  generateName: fuzzer-
+  labels: # runtime
+    app: agent
+    env: dev
+spec:
+  terminationGracePeriodSeconds: 60
+  restartPolicy: Never
+  containers:
+    - name: agent
+      image: # runtime
+      command: ["python", "-m", "agent"]
+      # command: ["sleep", "infinity"]
+      imagePullPolicy: IfNotPresent
+      env:
+        - name: AGENT_MODE
+          value: # runtime
+        - name: FUZZER_SESSION_ID
+          value: # runtime
+        - name: FUZZER_USER_ID
+          value: # runtime
+        - name: FUZZER_PROJECT_ID
+          value: # runtime
+        - name: FUZZER_POOL_ID
+          value: # runtime
+        - name: FUZZER_ID
+          value: # runtime
+        - name: FUZZER_REV
+          value: # runtime
+        - name: FUZZER_ENGINE
+          value: # runtime
+        - name: FUZZER_LANG
+          value: # runtime
+        - name: MQ_BROKER
+          value: sqs
+        - name: MQ_QUEUE_DLQ
+          value: dlq
+        - name: MQ_QUEUE_SCHEDULER
+          value: mq-scheduler
+        - name: MQ_QUEUE_CRASH_ANALYZER
+          value: mq-crash-analyzer
+        - name: MQ_REGION
+          value: us-east1
+        - name: MQ_URL
+          value: http://bondifuzz-elasticmq:9324
+        - name: MQ_USERNAME
+          value: x
+        - name: MQ_PASSWORD
+          value: x
+        - name: S3_URL
+          value: http://bondifuzz-minio:9000
+        - name: S3_ACCESS_KEY
+          value: root
+        - name: S3_SECRET_KEY
+          value: toortoor
+        - name: S3_BUCKET_FUZZERS
+          value: bondifuzz-fuzzers-dev
+        - name: S3_BUCKET_DATA
+          value: bondifuzz-data-dev
+        - name: TMPFS_VOLUME_PATH
+          value: /mnt/tmpfs
+        - name: TMPFS_VOLUME_LIMIT
+          value: "256000000"
+        - name: DISK_VOLUME_PATH
+          value: /mnt/disk
+        - name: DISK_VOLUME_LIMIT
+          value: "512000000"
+        - name: FUZZER_RAM_LIMIT
+          value: # runtime
+        - name: FUZZER_TIME_LIMIT
+          value: "21600" # 6h
+        - name: FUZZER_NUM_ITERATIONS
+          value: "2000000"
+        - name: FUZZER_CRASH_MAX_SIZE
+          value: "10000"
+        - name: FUZZER_TIME_LIMIT_FIRSTRUN
+          value: "30"
+        - name: FUZZER_NUM_ITERATIONS_FIRSTRUN
+          value: "10000"
+        - name: AGENT_DEFAULT_TARGET
+          value: "target"
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: KUBERNETES_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: KUBERNETES_USER_CONTAINER
+          value: sandbox
+        - name: RUNNER_POLL_INTERVAL_MS
+          value: "500"
+        - name: RUNNER_GRACE_PERIOD_SEC
+          value: "10"
+        - name: PATH_RUNNER_BINARY
+          value: /bondi/bin/runner
+        - name: PATH_VOLUME_DISK
+          value: /bondi/volumes/disk
+        - name: PATH_VOLUME_TMPFS
+          value: /bondi/volumes/tmpfs
+        - name: PATH_METRICS
+          value: /bondi/volumes/tmpfs/metrics.json
+        - name: PATH_AGENT_BINARIES
+          value: /bondi/volumes/disk/binaries
+        - name: PATH_USER_HOME_LINK
+          value: /bondi/fuzzer
+        - name: PATH_USER_TMPFS_SOURCE
+          value: /bondi/volumes/tmpfs/user
+        - name: PATH_USER_TMPFS_LINK
+          value: /bondi/tmpfs
+      resources:
+        requests:
+          cpu: # runtime
+          memory: # runtime
+        limits:
+          cpu: # runtime
+          memory: # runtime
+      volumeMounts:
+        - name: tmpfs
+          mountPath: /bondi/volumes/tmpfs
+        - name: disk
+          mountPath: /bondi/volumes/disk
+        - name: logging-settings
+          mountPath: /agent/logging.yaml
+          subPath: "agent"
+    - name: sandbox
+      image: # runtime
+      command: ["/bondi/bin/monitor", "/bondi/bin/monitor.json"]
+      imagePullPolicy: IfNotPresent
+      env: []
+      resources:
+        requests:
+          cpu: # runtime
+          memory: # runtime
+        limits:
+          cpu: # runtime
+          memory: # runtime
+      volumeMounts:
+        - name: tmpfs
+          mountPath: /bondi/volumes/tmpfs
+        - name: disk
+          mountPath: /bondi/volumes/disk
+        - name: runner-binary
+          mountPath: /bondi/bin/runner
+          subPath: "runner"
+        - name: monitor-binary
+          mountPath: /bondi/bin/monitor
+          subPath: "monitor"
+        - name: monitor-config
+          mountPath: /bondi/bin/monitor.json
+          subPath: "config.json"
+        - name: empty-credentials
+          mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+  volumes:
+    - name: tmpfs
+      emptyDir:
+        medium: Memory
+        sizeLimit: # runtime
+    - name: disk
+      emptyDir: {}
+    - name: empty-credentials
+      emptyDir: {}
+    - name: "logging-settings"
+      configMap:
+        name: "agent-logging-settings"
+    - name: "runner-binary"
+      configMap:
+        name: "runner-binary"
+        defaultMode: 0755
+    - name: "monitor-binary"
+      configMap:
+        name: "monitor-binary"
+        defaultMode: 0755
+    - name: "monitor-config"
+      configMap:
+        name: "monitor-config"
+        defaultMode: 0644
+  imagePullSecrets:
+    - name: regcred
+  serviceAccountName: bondifuzz-agent
+  nodeSelector: # runtime
+  tolerations: # runtime

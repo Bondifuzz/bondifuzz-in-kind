@@ -1,0 +1,226 @@
+version: '3.3'
+
+x-infra-ready: &infra-ready
+  elasticmq:
+    condition: service_healthy
+  minio:
+    condition: service_healthy
+  arangodb:
+    condition: service_healthy
+  registry:
+    condition: service_healthy
+
+x-healthcheck-params: &default-healthcheck-params
+  interval: 1s
+  timeout: 30s
+  retries: 60
+  start_period: 0s
+
+x-bondi-healthcheck: &bondi-healthcheck
+  <<: *default-healthcheck-params
+  test: >
+    if [ ! -f /tmp/healthy.txt ]; then
+      python -c 'from urllib.request import urlopen; urlopen("http://localhost:8080")' \
+      && touch /tmp/healthy.txt
+    fi
+
+services:
+  #########################################
+  # Infra
+  #########################################
+  elasticmq:
+    hostname: bondifuzz-elasticmq
+    image: softwaremill/elasticmq-native@sha256:c251751b5d668033c69494ff37a938f977397ad3c806085e53f269bedb2c3ead
+    volumes:
+      - type: volume
+        source: elasticmq
+        target: /data
+      - type: bind
+        source: ./bondifuzz/infra/elasticmq/elasticmq.conf
+        target: /opt/elasticmq.conf
+    ports:
+      - '127.0.0.1:9324:9324'
+      - '127.0.0.1:9325:9325'
+    healthcheck:
+      <<: *default-healthcheck-params
+      test: >
+        if [ ! -f /tmp/healthy.txt ]; then
+          wget -qO- http://127.0.0.1:9324 2>&1 | grep -q 400 \
+          && touch /tmp/healthy.txt
+        fi
+  minio_create_buckets:
+    image: busybox
+    command: |
+      mkdir -p /data/bondifuzz-fuzzers-dev
+      mkdir -p /data/bondifuzz-data-dev
+    volumes:
+      - type: volume
+        source: minio
+        target: /data
+  minio:
+    hostname: bondifuzz-minio
+    image: minio/minio@sha256:25d386a141a124993ecc7e3c4b8bce0c796bfa849cb436eb1dd2aeee8782f48d
+    command: server --console-address :9001 /data
+    environment:
+      - MINIO_ROOT_USER=root
+      - MINIO_ROOT_PASSWORD=toortoor
+    volumes:
+      - type: volume
+        source: minio
+        target: /data
+    ports:
+      - '127.0.0.1:9000:9000'
+      - '127.0.0.1:9001:9001'
+    healthcheck:
+      <<: *default-healthcheck-params
+      test: >
+        if [ ! -f /tmp/healthy.txt ]; then
+          curl http://localhost:9000 \
+          && touch /tmp/healthy.txt
+        fi
+    depends_on:
+      minio_create_buckets:
+        condition: service_completed_successfully
+  arangodb:
+    hostname: bondifuzz-arangodb
+    image: arangodb@sha256:664d8d8030845bcec5ae447d220cdb2b788f529211600e99e517bd7048aecaaf
+    environment:
+      - ARANGO_ROOT_PASSWORD=toor
+    volumes:
+      - type: volume
+        source: arangodb
+        target: /var/lib/arangodb3
+      - type: bind
+        source: ./bondifuzz/infra/arangodb/entrypoint.sh
+        target: /entrypoint.sh
+      - type: bind
+        source: ./bondifuzz/infra/arangodb/initdb.d
+        target: /initdb.d
+      - type: bind
+        source: ./bondifuzz/infra/arangodb/arangod.conf
+        target: /etc/arangodb3/arangod.conf
+    ports:
+      - '127.0.0.1:8529:8529'
+    healthcheck:
+      <<: *default-healthcheck-params
+      test: >
+        if [ ! -f /tmp/healthy.txt ]; then
+          wget -qO- http://127.0.0.1:8529/_db/_system 2>&1 | grep -q 401 \
+          && touch /tmp/healthy.txt
+        fi
+  registry:
+    hostname: bondifuzz-registry
+    image: registry@sha256:3f71055ad7c41728e381190fee5c4cf9b8f7725839dcf5c0fe3e5e20dc5db1fa
+    environment:
+      - REGISTRY_HTTP_SECRET=registry-http-secret
+    volumes:
+      - type: volume
+        source: registry
+        target: /var/lib/registry
+    ports:
+      - '127.0.0.1:5000:5000'
+    healthcheck:
+      <<: *default-healthcheck-params
+      test: >
+        if [ ! -f /tmp/healthy.txt ]; then
+          wget -qO- localhost:5000/v2/_catalog \
+          && touch /tmp/healthy.txt
+        fi
+  #########################################
+  # Services
+  #########################################
+  api-gateway:
+    hostname: bondifuzz-api-gateway
+    image: bondifuzz/api-gateway
+    env_file: ./bondifuzz/services/api-gateway/.env
+    volumes:
+      - type: bind
+        source: ./bondifuzz/services/api-gateway/logging.yaml
+        target: /service/logging.yaml
+    ports:
+      - '8080:8080'
+    build:
+      context: ./build/services/api-gateway
+    depends_on:
+      <<: *infra-ready
+    healthcheck:
+      <<: *bondi-healthcheck
+  scheduler:
+    hostname: bondifuzz-scheduler
+    image: bondifuzz/scheduler
+    env_file: ./bondifuzz/services/scheduler/.env
+    volumes:
+      - type: bind
+        source: ./bondifuzz/services/scheduler/logging.yaml
+        target: /service/logging.yaml
+    ports:
+      - '127.0.0.1:8081:8081'
+    build:
+      context: ./build/services/scheduler
+    depends_on:
+      <<: *infra-ready
+    healthcheck:
+      <<: *bondi-healthcheck
+  starter:
+    hostname: bondifuzz-starter
+    image: bondifuzz/starter
+    env_file: ./bondifuzz/services/starter/.env
+    volumes:
+      - type: bind
+        source: ./bondifuzz/services/starter/logging.yaml
+        target: /service/logging.yaml
+      - type: bind
+        source: ./bondifuzz/services/starter/agent.yaml
+        target: /service/agent.yaml
+      - type: bind
+        source: ./bondifuzz/services/starter/kube_config.yaml
+        target: /root/.kube/config
+    ports:
+      - '127.0.0.1:8082:8082'
+    build:
+      context: ./build/services/starter
+    depends_on:
+      <<: *infra-ready
+    healthcheck:
+      <<: *bondi-healthcheck
+  crash-analyzer:
+    hostname: bondifuzz-crash-analyzer
+    image: bondifuzz/crash-analyzer
+    env_file: ./bondifuzz/services/crash-analyzer/.env
+    volumes:
+      - type: bind
+        source: ./bondifuzz/services/crash-analyzer/logging.yaml
+        target: /service/logging.yaml
+    ports:
+      - '127.0.0.1:8083:8083'
+    build:
+      context: ./build/services/crash-analyzer
+    depends_on:
+      <<: *infra-ready
+    healthcheck:
+      <<: *bondi-healthcheck
+  pool-manager:
+    hostname: bondifuzz-pool-manager
+    image: bondifuzz/pool-manager
+    env_file: ./bondifuzz/services/pool-manager/.env
+    volumes:
+      - type: bind
+        source: ./bondifuzz/services/pool-manager/logging.yaml
+        target: /service/logging.yaml
+    ports:
+      - '127.0.0.1:8084:8084'
+    build:
+      context: ./build/services/pool-manager
+    depends_on:
+      <<: *infra-ready
+    healthcheck:
+      <<: *bondi-healthcheck
+volumes:
+  minio:
+  elasticmq:
+  arangodb:
+  registry:
+networks:
+  default:
+    name: kind
+    external: true

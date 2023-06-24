@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: incluster
+spec:
+  containers:
+  - image: python:3.9-slim
+    command:
+      - sleep
+      - infinity
+    name: test-container

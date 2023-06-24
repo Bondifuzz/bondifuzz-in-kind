@@ -1,0 +1,28 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: bondifuzz
+containerdConfigPatches:
+  #
+  # Add container registry to kind cluster
+  # Push an image:
+  # $ docker tag <some-image> localhost:5000/myimage
+  # $ docker push localhost:5000/myimage
+  #
+  # Use an image in pod:
+  # Add 'image: localhost:5000/myimage' to yaml spec
+  #
+  # This config patch does the following:
+  # Hey, if somebody wants an image from localhost:5000,
+  # pull it from http://bondifuzz-registry:5000
+  # which is a registry deployed with docker-compose.
+  # bondifuzz-registry is attached to the kind network,
+  # so it must be accessible by dns name
+  #
+  - |-
+    [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5000"]
+      endpoint = ["http://bondifuzz-registry:5000"]
+nodes:
+  - role: control-plane
+  - role: worker
+    labels:
+      bondifuzz/pool-id: 1100

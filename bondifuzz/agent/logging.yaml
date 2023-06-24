@@ -1,0 +1,96 @@
+version: 1
+disable_existing_loggers: True
+formatters:
+  fmt_console:
+    '()': 'logging.Formatter'
+    format: '%(asctime)s %(levelname)-8s %(name)-15s %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+  fmt_colored_console:
+    '()': 'ext://coloredlogs.ColoredFormatter'
+    format: '%(asctime)s %(levelname)-8s %(name)-15s %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+    field_styles:
+      asctime:
+        color: green
+        bright: True
+      name:
+        color: blue
+        bright: True
+      levelname:
+        color: cyan
+        bold: True
+      process:
+        color: 116
+    level_styles:
+      info:
+        color: cyan
+        bright: True
+      warning:
+        color: 220
+      error:
+        color: red
+      debug:
+        color: green
+      critical:
+        color: red
+        bold: True
+  # fmt_fluent:
+  #   '()': fluent.handler.FluentRecordFormatter
+  #   format:
+  #     message: '%(message)s'
+  #     process: '%(process)d'
+  #     level: '%(levelname)s'
+  #     name: '%(name)s'
+  #     hostname: '%(hostname)s'
+handlers:
+  hnd_console:
+    class: logging.StreamHandler
+    formatter: fmt_console
+    level: NOTSET
+    stream: ext://sys.stdout
+  hnd_colored_console:
+    class: logging.StreamHandler
+    formatter: fmt_colored_console
+    level: NOTSET
+    stream: ext://sys.stdout
+  # hnd_fluent:
+  #   class: fluent.asynchandler.FluentHandler
+  #   formatter: fmt_fluent
+  #   level: NOTSET
+  #   host: localhost
+  #   port: 24224
+  #   tag: test.api_gateway
+  none:
+    class: logging.NullHandler
+loggers:
+  '': # root logger
+    handlers: [hnd_console]
+    level: NOTSET
+  entry:
+    level: DEBUG
+  runner:
+    level: DEBUG
+  fuzzing:
+    level: DEBUG
+  merge:
+    level: DEBUG
+  psmon:
+    level: DEBUG
+  psmanager:
+    level: DEBUG
+  s3.init:
+    level: DEBUG
+  s3:
+    level: DEBUG
+  transfer:
+    level: DEBUG
+  storage:
+    level: DEBUG
+  botocore:
+    level: WARNING
+  boto3:
+    level: WARNING
+  s3transfer:
+    level: WARNING
+  asyncio:
+    level: WARNING

@@ -1,0 +1,18 @@
+{
+    "metrics_file_path": "/bondi/volumes/tmpfs/metrics.json",
+    "metrics_dump_interval_ms": 100,
+    "tmpfs_volume_path": "/bondi/volumes/tmpfs",
+    "tmpfs_min_space_left_mb": 5,
+    "grace_period_seconds": 15,
+    "runner_binary_path": "/bondi/bin/runner",
+    "symlinks" : [
+        {
+            "link": "/bondi/fuzzer",
+            "path": "/bondi/volumes/disk/binaries"
+        },
+        {
+            "link": "/bondi/tmpfs",
+            "path": "/bondi/volumes/tmpfs/user"
+        }
+    ]
+}

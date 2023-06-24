@@ -1,0 +1,12 @@
+arangodb:
+  database: PoolManager
+  collection: Pools
+pools:
+  - id: "1100"
+    name: pool-1
+    description: Sample pool 1
+    health: Ok
+    node_group:
+      node_cpu: 5000 # mcpu
+      node_ram: 12000 # Mi
+      node_count: 1

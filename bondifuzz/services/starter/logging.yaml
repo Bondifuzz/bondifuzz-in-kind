@@ -1,0 +1,129 @@
+version: 1
+disable_existing_loggers: True
+formatters:
+  fmt_console:
+    '()': 'logging.Formatter'
+    format: '%(asctime)s %(levelname)-8s %(name)-15s %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+  fmt_colored_console:
+    '()': 'ext://coloredlogs.ColoredFormatter'
+    format: '%(asctime)s %(levelname)-8s %(name)-15s %(message)s'
+    datefmt: '%Y-%m-%d %H:%M:%S'
+    field_styles:
+      asctime:
+        color: green
+        bright: True
+      name:
+        color: blue
+        bright: True
+      levelname:
+        color: cyan
+        bold: True
+    level_styles:
+      info:
+        color: cyan
+        bright: True
+      warning:
+        color: 220
+      error:
+        color: red
+      debug:
+        color: green
+      critical:
+        color: red
+        bold: True
+  # fmt_fluent:
+  #   '()': fluent.handler.FluentRecordFormatter
+  #   format:
+  #     message: '%(message)s'
+  #     process: '%(process)d'
+  #     level: '%(levelname)s'
+  #     name: '%(name)s'
+  #     hostname: '%(hostname)s'
+handlers:
+  hnd_console:
+    class: logging.StreamHandler
+    formatter: fmt_console
+    level: NOTSET
+    stream: ext://sys.stdout
+  hnd_colored_console:
+    class: logging.StreamHandler
+    formatter: fmt_colored_console
+    level: NOTSET
+    stream: ext://sys.stdout
+  # hnd_fluent:
+  #   class: fluent.asynchandler.FluentHandler
+  #   formatter: fmt_fluent
+  #   level: NOTSET
+  #   host: localhost
+  #   port: 24224
+  #   tag: test.starter
+  none:
+    class: logging.NullHandler
+loggers:
+  '': # root logger
+    handlers: [hnd_colored_console]
+    level: NOTSET
+  main:
+    level: INFO
+    propagate: True
+  aiohttp:
+    level: INFO
+    propagate: True
+  asyncio:
+    level: WARNING
+    propagate: True
+  mq.channel.in:
+    level: INFO
+    propagate: True
+  mq.channel.out:
+    level: INFO
+    propagate: True
+  mq.consumer:
+    level: INFO
+    propagate: True
+  mq.producer:
+    level: INFO
+    propagate: True
+  starter:
+    level: INFO
+    propagate: True
+  k8s.events:
+    level: DEBUG
+    propagate: True
+  k8s.init:
+    level: INFO
+    propagate: True
+  k8s.listener:
+    level: INFO
+    propagate: True
+  kubernetes_asyncio:
+    level: WARNING
+    propagate: True
+  uvicorn.access:
+    level: INFO
+    propagate: True
+  uvicorn.error:
+    level: INFO
+    propagate: True
+  uvicorn.asgi:
+    level: WARNING
+    propagate: True
+  botocore:
+    level: WARNING
+    propagate: True
+  aioboto3:
+    level: WARNING
+    propagate: True
+  boto3:
+    level: WARNING
+    propagate: True
+  charset_normalizer:
+    level: WARNING
+    propagate: True
+  aiohttp_sse_client:
+    level: WARNING
+    propagate: True
+  bg.tasks:
+    level: WARNING
+    propagate: True
