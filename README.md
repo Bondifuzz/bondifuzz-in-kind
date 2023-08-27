@@ -9,11 +9,30 @@ Prerequisites:
 
 # Installation
 
-Download repository:
+**WARNING**: We do not recommend to expose the deployment to the internet
+
+Download deployment repository:
 
 ```bash
 git clone https://github.com/Bondifuzz/bondifuzz-in-kind.git
 cd bondifuzz-in-kind
+```
+
+Download repositories of the services:
+
+```bash
+# Services
+git clone https://github.com/Bondifuzz/api-gateway.git build/services/api-gateway
+git clone https://github.com/Bondifuzz/scheduler.git build/services/scheduler
+git clone https://github.com/Bondifuzz/starter.git build/services/starter
+git clone https://github.com/Bondifuzz/crash-analyzer.git build/services/crash-analyzer
+git clone https://github.com/Bondifuzz/pool-manager-stub.git build/services/pool-manager
+git clone https://github.com/Bondifuzz/sbxbin-monitor.git build/sandbox_binaries/monitor
+git clone https://github.com/Bondifuzz/sbxbin-runner.git build/sandbox_binaries/runner
+git clone https://github.com/Bondifuzz/libfuzzer-agent.git build/agents/libfuzzer-agent
+git clone https://github.com/Bondifuzz/afl-agent.git build/agents/afl-agent
+git clone https://github.com/Bondifuzz/default-images.git build/sandbox/default-images
+git clone https://github.com/Bondifuzz/bondi-python.git build/ui/bondi-python
 ```
 
 ## Sandbox binaries
@@ -21,7 +40,6 @@ cd bondifuzz-in-kind
 Compile sandbox binaries:
 
 ```bash
-git clone https://github.com/Bondifuzz/agents/sbxbin-monitor.git build/sandbox_binaries/monitor
 RUSTFLAGS='-C target-feature=+crt-static' cargo build \
 	--manifest-path=build/sandbox_binaries/monitor/Cargo.toml \
 	--release --target x86_64-unknown-linux-gnu
@@ -29,7 +47,6 @@ RUSTFLAGS='-C target-feature=+crt-static' cargo build \
 upx build/sandbox_binaries/monitor/target/x86_64-unknown-linux-gnu/release/monitor \
 	-9 -o build/sandbox_binaries/monitor/monitor
 
-git clone https://github.com/Bondifuzz/agents/sbxbin-runner.git build/sandbox_binaries/runner
 RUSTFLAGS='-C target-feature=+crt-static' cargo build \
 	--manifest-path=build/sandbox_binaries/runner/Cargo.toml \
 	--release --target x86_64-unknown-linux-gnu
@@ -62,13 +79,18 @@ kubectl create role bondifuzz-agent --verb="get" --resource="pods,pods/log,pods/
 kubectl create rolebinding bondifuzz-agent --role=bondifuzz-agent --serviceaccount=default:bondifuzz-agent
 ```
 
-## Agent images
+## Private Container registry
 
-Prepare agent images:
+Deploy private container registry
+
+```bash
+docker-compose -p bondifuzz up -d registry
+```
+
+Push agent images:
 
 ```bash
 # Build LibFuzzer agent
-git clone https://github.com/Bondifuzz/agents/libfuzzer-agent.git build/agents/libfuzzer-agent
 docker build -t bondifuzz/agents/libfuzzer build/agents/libfuzzer-agent
 
 docker tag bondifuzz/agents/libfuzzer localhost:5000/agents/libfuzzer
@@ -87,7 +109,6 @@ docker tag bondifuzz/agents/libfuzzer localhost:5000/agents/go-fuzz-libfuzzer
 docker push localhost:5000/agents/go-fuzz-libfuzzer
 
 # Build AFL agent
-git clone https://github.com/Bondifuzz/agents/afl-agent.git build/agents/afl-agent
 docker build -t bondifuzz/agents/afl build/agents/afl-agent
 
 docker tag bondifuzz/agents/afl localhost:5000/agents/afl
@@ -97,13 +118,9 @@ docker tag bondifuzz/agents/afl localhost:5000/agents/afl.rs
 docker push localhost:5000/agents/afl.rs
 ```
 
-## User images (Sandbox)
-
-Prepare default user images:
+Prepare default user images (sandbox images):
 
 ```bash
-git clone https://github.com/Bondifuzz/agents/default-images.git build/sandbox/default-images
-
 # Default user image: Ubuntu 18.04
 docker build \
 	-f build/sandbox/default-images/ubuntu_18.04.dockerfile \
@@ -132,24 +149,27 @@ docker tag bondifuzz/sandbox/ubuntu-22.04 localhost:5000/sandbox/ubuntu-22.04
 docker push localhost:5000/sandbox/ubuntu-22.04
 ```
 
-## Services
 
-Download repositories:
-
-```bash
-git clone https://github.com/Bondifuzz/api-gateway.git build/services/api-gateway
-git clone https://github.com/Bondifuzz/scheduler.git build/services/scheduler
-git clone https://github.com/Bondifuzz/starter.git build/services/starter
-git clone https://github.com/Bondifuzz/crash-analyzer.git build/services/crash-analyzer
-git clone https://github.com/Bondifuzz/pool-manager-stub.git build/services/pool-manager
-```
-
-Push additional images to private registry:
+Push additional images to the private registry:
 
 ```bash
 docker pull busybox
 docker tag busybox localhost:5000/starter-test-run
 docker push localhost:5000/starter-test-run
+```
+
+## Services
+
+Modify credentials of the system users:
+
+```bash
+export CHARS="0-9a-zA-Z_\-;.,%$"
+cat /dev/urandom | tr -dc $CHARS | head -c 22 > password_bondi_user.txt
+cat /dev/urandom | tr -dc $CHARS | head -c 22 > password_bondi_admin.txt
+
+export ENVFILE=./bondifuzz/services/api-gateway/.env
+sed -i "s/DEFAULT_ACCOUNT_PASSWORD=.*/DEFAULT_ACCOUNT_PASSWORD=`cat password_bondi_user.txt`/g" $ENVFILE
+sed -i "s/SYSTEM_ADMIN_PASSWORD=.*/SYSTEM_ADMIN_PASSWORD=`cat password_bondi_admin.txt`/g" $ENVFILE
 ```
 
 Deploy bondifuzz services:
@@ -164,6 +184,17 @@ Now host at `http://localhost:8080` must be available
 ## Install CLI
 
 ```bash
-git clone https://github.com/Bondifuzz/bondi-python.git build/ui/bondi-python
 pip install build/ui/bondi-python
+bondi config init \
+    --server-url "http://127.0.0.1:8080" \
+    --username root \
+    --password `cat password_bondi_admin.txt`
+
+bondi admin users list
+# +------+------------+----------------+------------------------+---------+
+# |   ID | Username   | Display name   | Email                  | Admin   |
+# |------+------------+----------------+------------------------+---------|
+# | 1238 | root       | Root           | ff.admin@example.com   | True    |
+# | 1242 | default    | Default        | ff.default@example.com | False   |
+# +------+------------+----------------+------------------------+---------+
 ```
