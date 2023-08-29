@@ -1,6 +1,7 @@
 # Bondifuzz
 
 Prerequisites:
+- An instance with a minimum of 8 cores and 8 GB of RAM and Ubuntu/Debian operating system
 - [docker-compose v1.29.2](https://github.com/docker/compose/releases/tag/1.29.2)
 - [kind](https://kind.sigs.k8s.io/docs/user/quick-start/#installation)
 - [kubectl](https://kubernetes.io/docs/tasks/tools)
@@ -156,6 +157,15 @@ Push additional images to the private registry:
 docker pull busybox
 docker tag busybox localhost:5000/starter-test-run
 docker push localhost:5000/starter-test-run
+```
+
+## Resource pool setup
+
+Make the necessary edits to the `node_cpu` and `node_ram` fields in the `pools.yaml` file. Ensure that a minimum of 4 cores and 4GB of RAM are reserved for system usage. The remaining resources can be allocated for fuzzing. Once you have made these adjustments, update the `pools.yaml` file accordingly.
+
+Full path to the file:
+```
+bondifuzz/infra/arangodb/initdb.d/pools.yaml
 ```
 
 ## Services
